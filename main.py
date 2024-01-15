@@ -1,12 +1,20 @@
-from flask import Flask, jsonify
+from flask import Flask, request, jsonify
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, pipeline
 import os
 
 app = Flask(__name__)
 
+tokenizer = AutoTokenizer.from_pretrained("unicamp-dl/translation-en-pt-t5")
+model = AutoModelForSeq2SeqLM.from_pretrained("unicamp-dl/translation-en-pt-t5")
+enpt_pipeline = pipeline('text2text-generation', model=model, tokenizer=tokenizer, max_length=512, num_beams=5)
 
-@app.route('/')
-def index():
-    return jsonify({"Choo Choo": "Welcome to your Flask app 🚅"})
+
+@app.route('/translate', methods=['POST'])
+def translate():
+    content = request.json
+    text_to_translate = content['text']
+    result = enpt_pipeline(f"translate English to Portuguese: {text_to_translate}")
+    return jsonify({"translated_text": result[0]["generated_text"]})
 
 
 if __name__ == '__main__':
